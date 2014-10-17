@@ -66,13 +66,21 @@ There are `r number.incomplete` missing values in the data, which corresponds to
 We will use the mean value to replace missing (steps) data. We know it is entire days that are missing,
 rather than random intervals here and there, but we will not require this for the imputation of the missing
 values. Neither will we assume the ordering of the intervals for each day.
+
+The basic strategy here is:  
+1. Find the locations (and hence the interval values) of the missing values.  
+2. Find the indices of the relevant intervals in the daily average data.  
+3. Use these indices to extract the (replacement) values from the daily average data and
+substitute back into the data in the locations of the associated NA values.  
+A completely missing day would thus be replaced exactly by a copy of the average daily activity profile.
+
 ```{r imputing}
 steps.na    <- is.na(raw.data$steps)
 ind.in.med  <- sapply(raw.data$interval[steps.na], function(x) which(x == average.daily.steps$interval))
 #logical vector of NA values corresponds to indices of values in average.daily.steps
 raw.data.no.missing                 <- raw.data
 raw.data.no.missing$steps[steps.na] <- average.daily.steps$steps[ind.in.med]
-number.missing.in.duplicated        <- sum(is.na(raw.data.no.missing$steps))
+number.missing.in.duplicated        <- sum(is.na(raw.data.no.missing$steps)) #check for any still missing 
 ```
 There are `r number.missing.in.duplicated` missing values in the duplicate data.
 
