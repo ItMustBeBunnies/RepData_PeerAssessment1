@@ -7,43 +7,71 @@ output:
 
 
 ## Loading and preprocessing the data
-```{r loaddata}
+
+```r
 raw.data <- read.csv("activity.csv", colClasses=c("numeric", "character", "numeric"))
 raw.data$date <- as.Date(raw.data$date)
- ```
+```
 Having read in the raw data and converted date to Date class, it has the structure:
-```{r structureData}
+
+```r
 str(raw.data)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: num  0 5 10 15 20 25 30 35 40 45 ...
 ```
 
 
 
 ## What is mean total number of steps taken per day?
 First, let's aggregate the data for each day:
-```{r totaldaily}
+
+```r
 total.daily.steps <- aggregate(steps ~ date, raw.data, sum)
 ```
 This gives data suitable for answering this question:
-```{r showtotaldaily}
+
+```r
 head(total.daily.steps)
 ```
+
+```
+##         date steps
+## 1 2012-10-02   126
+## 2 2012-10-03 11352
+## 3 2012-10-04 12116
+## 4 2012-10-05 13294
+## 5 2012-10-06 15420
+## 6 2012-10-07 11015
+```
 The figure below shows the histogram of total steps taken each day.
-```{r histdaily}
+
+```r
 h <- hist(total.daily.steps$steps, breaks=15, xlab="Total daily number of steps",
         col="lightgrey", main=NA)
+```
+
+![plot of chunk histdaily](figure/histdaily-1.png) 
+
+```r
 mean.value      <- mean(total.daily.steps$steps)
 median.value    <- median(total.daily.steps$steps)
 ```
 
-The **mean** value of the total number of steps taken each day is `r sprintf("%.1f", mean.value)` and
-the **median** value is `r sprintf("%.1f", median.value)`.
+The **mean** value of the total number of steps taken each day is 10766.2 and
+the **median** value is 10765.0.
 
 
 
 ## What is the average daily activity pattern?
 Now we want to aggregate the data over the days to see the average activity profile
 during the day:
-```{r averagedaily}
+
+```r
 average.daily.steps <- aggregate(steps ~ interval, raw.data, mean)
 with(average.daily.steps, plot(interval, steps, type="l", ylab="Average number of steps",
                                 main="Average daily activity pattern"))
@@ -52,21 +80,25 @@ abline(v=max.interval, lty=2)
 legend("topright", sprintf("interval %d", max.interval), lty=2)
 ```
 
-Interval `r max.interval`, on average, contains the maximum number of steps.
+![plot of chunk averagedaily](figure/averagedaily-1.png) 
+
+Interval 835, on average, contains the maximum number of steps.
 
 
 ## Imputing missing values
-```{r findmissing}
+
+```r
 cc                  <- complete.cases(raw.data)
 number.incomplete   <- length(cc)-sum(cc)
 ```
 
-There are `r number.incomplete` missing values in the data, which corresponds to
-`r sprintf("%.1f%%", 100*number.incomplete/length(cc))` of cases.
+There are 2304 missing values in the data, which corresponds to
+13.1% of cases.
 We will use the mean value to replace missing (steps) data. We know it is entire days that are missing,
 rather than random intervals here and there, but we will not require this for the imputation of the missing
 values. Neither will we assume the ordering of the intervals for each day.
-```{r imputing}
+
+```r
 steps.na    <- is.na(raw.data$steps)
 ind.in.med  <- sapply(raw.data$interval[steps.na], function(x) which(x == average.daily.steps$interval))
 #logical vector of NA values corresponds to indices of values in average.daily.steps
@@ -74,24 +106,42 @@ raw.data.no.missing                 <- raw.data
 raw.data.no.missing$steps[steps.na] <- average.daily.steps$steps[ind.in.med]
 number.missing.in.duplicated        <- sum(is.na(raw.data.no.missing$steps))
 ```
-There are `r number.missing.in.duplicated` missing values in the duplicate data.
+There are 0 missing values in the duplicate data.
 
-```{r histdaily2}
+
+```r
 total.daily.steps2 <- aggregate(steps ~ date, raw.data.no.missing, sum)
 h2 <- hist(total.daily.steps2$steps, breaks=15, xlab="Total daily number of steps\n(Missing values substituted)",
         col="lightgrey", main=NA)
+```
+
+![plot of chunk histdaily2](figure/histdaily2-1.png) 
+
+```r
 mean.value2      <- mean(total.daily.steps2$steps)
 median.value2    <- median(total.daily.steps2$steps)
 ```
 The **mean** value of the total number of steps taken each day, after imputing missing values,
-is `r sprintf("%.1f", mean.value2)` and the **median** value is `r sprintf("%.1f", median.value2)`.
+is 10766.2 and the **median** value is 10766.2.
 By imputing missing values in this manner, we have biased the distribution towards the mean. The mean is unchanged
 from the previous calculation (with missing values) but the median has now converged to the mean. The effect is
 clear when comparing the two histograms, with all the imputed observations falling into a single bin. This is
 confirmed by printing the counts for each histogram:
-```{r histcounts}
+
+```r
 print(h$counts)
+```
+
+```
+##  [1]  2  2  3  3  7 16 10  7  1  0  2
+```
+
+```r
 print(h2$counts)
+```
+
+```
+##  [1]  2  2  3  3  7 24 10  7  1  0  2
 ```
 All 8 missing days have been added into a single bin, significantly distorting the distribution.
 
@@ -99,7 +149,8 @@ All 8 missing days have been added into a single bin, significantly distorting t
 Here we will look to see if there is a difference in activity throughout the day between weekdays
 and weekends.
 
-```{r weekdays}
+
+```r
 daynames <- weekdays(raw.data.no.missing$date)
 #create new factor in data.frame
 raw.data.no.missing$weekend <- factor(ifelse( (daynames=="Saturday" | daynames=="Sunday"), 
@@ -116,6 +167,8 @@ xyplot(steps ~ interval | weekend, average.daily.no.missing,
         xlab="Interval", 
         ylab="Number of steps")
 ```
+
+![plot of chunk weekdays](figure/weekdays-1.png) 
 
 It is clear from the plot that weekdays have a sharper early burst of activity. Also, it appears to start 
 slightly earlier than the weekends. The plots also show the subject is more active throughout the day at weekends
