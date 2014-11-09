@@ -5,6 +5,15 @@ output:
     keep_md: true
 ---
 
+# Reproducible Research: Peer Assessment 1
+**An analysis of personal activity data from an anonymous individual collected during 
+October and November 2012.**
+
+In this report we consider activity data collected from an anonymous individual. The
+data were collected at five-minute intervals during the day, although there are a number
+of days missing data. We report some summaries of the individual's activity, demonstrate
+the negative impact of imputing the missing values, and finally contrast the activity
+profiles of weekdays and weekends.
 
 ## Loading and preprocessing the data
 
@@ -94,24 +103,43 @@ number.incomplete   <- length(cc)-sum(cc)
 
 There are 2304 missing values in the data, which corresponds to
 13.1% of cases.
-We will use the mean value to replace missing (steps) data. We know it is entire days that are missing,
+Checking how these are distributed within the data,
+
+```r
+with(raw.data, table(date[is.na(steps)]))
+```
+
+```
+## 
+## 2012-10-01 2012-10-08 2012-11-01 2012-11-04 2012-11-09 2012-11-10 
+##        288        288        288        288        288        288 
+## 2012-11-14 2012-11-30 
+##        288        288
+```
+we see that the missing values are concentrated in 8 days for which all values are absent
+(288 being the number of five-minute intervals in a day).
+We will use the mean value (for an interval) to replace missing (steps) data.
+We know it is entire days that are missing,
 rather than random intervals here and there, but we will not require this for the imputation of the missing
 values. Neither will we assume the ordering of the intervals for each day.
 
 The basic strategy here is:  
+
 1. Find the locations (and hence the interval values) of the missing values.  
 2. Find the indices of the relevant intervals in the daily average data.  
 3. Use these indices to extract the (replacement) values from the daily average data and
 substitute back into the data in the locations of the associated NA values.  
+
 A completely missing day would thus be replaced exactly by a copy of the average daily activity profile.
 
 
 ```r
 steps.na    <- is.na(raw.data$steps)
-ind.in.med  <- sapply(raw.data$interval[steps.na], function(x) which(x == average.daily.steps$interval))
-#logical vector of NA values corresponds to indices of values in average.daily.steps
+#now for each interval with NA steps, find the index of that interval in the average:
+ind.in.avg  <- sapply(raw.data$interval[steps.na], function(x) which(x == average.daily.steps$interval))
+#the logical vector of NA values now corresponds to indices of values in average.daily.steps
 raw.data.no.missing                 <- raw.data
-raw.data.no.missing$steps[steps.na] <- average.daily.steps$steps[ind.in.med]
+raw.data.no.missing$steps[steps.na] <- average.daily.steps$steps[ind.in.avg]
 number.missing.in.duplicated        <- sum(is.na(raw.data.no.missing$steps)) #check for any still missing 
 ```
 There are 0 missing values in the duplicate data.
